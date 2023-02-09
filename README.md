@@ -25,3 +25,4 @@ References / Sources
 ====================
 
 * Cmput404 Lab2: https://uofa-cmput404.github.io/lab-2-tcp-proxy.html
+* https://docs.python.org/3/library/socket.html
