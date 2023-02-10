@@ -18,6 +18,7 @@
 # Write your own HTTP GET and POST
 # The point is to understand what you have to send and get experience with it
 
+
 import sys
 import socket
 import re
@@ -33,21 +34,39 @@ class HTTPResponse(object):
         self.body = body
 
 class HTTPClient(object):
-    #def get_host_port(self,url):
+
+    def get_host_port(self,url):
+        # parse the url to get the hostname and port
+        # reference: https://docs.python.org/3/library/urllib.parse.html
+        after_parsing = urllib.parse.urlparse(url)
+        port = after_parsing.port
+        host = after_parsing.hostname
+        if port == None:
+            return host,80
+        else:
+            return host, port
+
 
     def connect(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
         return None
 
+    # Code is the second thing returned in the first line, Eg: "HTTP/1.1 301 Moved Permanently\r\n"
     def get_code(self, data):
-        return None
+        line = data.split("\r\n")[0]
+        code = int(line.split(" ")[1])
+        return code
 
+    # Headers is the content being returned till '\r\n\r\n'
     def get_headers(self,data):
-        return None
+        headers = data.split('\r\n\r\n')[0]
+        return headers
 
+    # Body is the content returned after '\r\n\r\n'
     def get_body(self, data):
-        return None
+        body = data.split('\r\n\r\n')[1]
+        return body
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -67,14 +86,76 @@ class HTTPClient(object):
                 done = not part
         return buffer.decode('utf-8')
 
+
+    # reference: https://docs.python.org/3/library/socket.html
     def GET(self, url, args=None):
-        code = 500
-        body = ""
+        #code = 500
+        #body = ""
+        
+        # get the hostname and port using the get_host_port() function
+        host, port  = self.get_host_port(url)
+
+        # get the path using urlib.parse 
+        path = urllib.parse.urlparse(url).path
+        if not path:
+            path = '/'
+
+        self.connect(host,port)
+        # reference: https://uofa-cmput404.github.io/cmput404-slides/04-HTTP.html#
+        request = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nAccept: */*\r\nConnection: close\r\n\r\n"
+
+        # send the request
+        self.sendall(request)
+
+        recvall = self.recvall(self.socket)
+
+        # get Headers, Code and Body from recvall(reading it from socket)
+        headers = self.get_headers(recvall)
+        code = self.get_code(recvall)
+        body = self.get_body(recvall)
+
+        print(f"\nHeaders: {headers} \nCode: {code} \nBody: {body}")        
+        
+        self.close()
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
+        #code = 500
+        #body = ""
+        
+        # get the hostname and port using the get_host_port() function
+        host, port  = self.get_host_port(url)
+
+        # get the path using urlib.parse 
+        path = urllib.parse.urlparse(url).path
+        if not path:
+            path = '/'
+
+        if args != None:
+            args = urllib.parse.urlencode(args)
+        else:
+            args = ""
+
+        self.connect(host,port)
+        
+        args_len = str(len(args))
+
+        # reference: https://uofa-cmput404.github.io/cmput404-slides/04-HTTP.html#/30
+        request = f"POST {path} HTTP/1.1\r\nHost: {host}\r\nAccept: */*\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: {args_len}\r\nConnection: close\r\n\r\n{args}"
+
+        # send the request
+        self.sendall(request)
+
+        recvall = self.recvall(self.socket)
+
+        # get Headers, Code and Body from recvall(reading it from socket)
+        headers = self.get_headers(recvall)
+        code = self.get_code(recvall)
+        body = self.get_body(recvall)
+
+        print(f"\nHeaders: {headers} \nCode: {code} \nBody: {body}") 
+
+        self.close()
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
