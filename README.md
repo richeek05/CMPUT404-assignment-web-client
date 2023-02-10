@@ -26,3 +26,6 @@ References / Sources
 
 * Cmput404 Lab2: https://uofa-cmput404.github.io/lab-2-tcp-proxy.html
 * https://docs.python.org/3/library/socket.html
+* https://docs.python.org/3/library/urllib.parse.html
+* https://uofa-cmput404.github.io/cmput404-slides/04-HTTP.html#
+
